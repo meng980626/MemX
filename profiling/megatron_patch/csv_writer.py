@@ -111,88 +111,6 @@ def write_csv_newline():
     dist.barrier(group=gloo_pg)
     _row_dict.clear()
 
-# def _write_csv_internal(gathered_list):
-#     """实际的 CSV 写入逻辑（由 rank 0 执行）"""
-#     rank = dist.get_rank()
-#     if rank != 0:
-#         return
-    
-#     all_keys = {k for d in gathered_list for k in d.keys()}
-    
-#     first_cols = ['TP size']
-#     last_cols = ['Peak GPU memory', 'TFLOP/s/GPU', 'elapsed time per iteration']
-    
-#     rest_cols = sorted(all_keys - set(first_cols) - set(last_cols))
-    
-#     final_header = first_cols + rest_cols + last_cols
-    
-#     first_write = not os.path.exists(CSV_FILE)
-#     with open(CSV_FILE, 'a', newline='', encoding='utf-8') as f:
-#         writer = csv.DictWriter(f, fieldnames=final_header)
-#         if first_write:
-#             writer.writeheader()
-#         for row in gathered_list:   # 每个 rank 一行
-#             writer.writerow(row)
-
-# @torch.no_grad()
-# def write_csv_newline():
-#     world_size = dist.get_world_size()
-#     rank = dist.get_rank()
-    
-#     # 使用共享目录（可以是 NFS、Lustre，或每个节点的本地目录 + 额外同步）
-#     shared_dir = Path(os.environ.get("SHARED_TMP", "${MEMX_WORKSPACE:-/path/to/workspace}/megatron-lm-vendorb"))
-#     shared_dir.mkdir(parents=True, exist_ok=True)
-    
-#     job_id = os.environ.get("SLURM_JOB_ID", "default")
-    
-#     # 每个 rank 写入自己的文件
-#     my_file = shared_dir / f"rank_{rank}_{job_id}.json"
-#     with open(my_file, 'w') as f:
-#         json.dump(_row_dict, f)
-#         f.flush()
-    
-#     # 同步点：确保所有 rank 都写完
-#     dist.barrier()
-    
-#     # 简单的 all_gather：rank 0 收集所有文件
-#     if rank == 0:
-#         gathered = [_row_dict]
-        
-#         # 等待其他 rank（带超时）
-#         for r in range(1, world_size):
-#             other_file = shared_dir / f"rank_{r}_{job_id}.json"
-#             for _ in range(3000):  # 300秒超时
-#                 if other_file.exists():
-#                     break
-#                 time.sleep(0.1)
-#             else:
-#                 raise TimeoutError(f"Timeout waiting for rank {r}")
-            
-#             with open(other_file, 'r') as f:
-#                 gathered.append(json.load(f))
-#             other_file.unlink()
-        
-#         # 写入 CSV
-#         _write_csv_internal(gathered)
-        
-#         # 通知完成
-#         (shared_dir / f"done_{job_id}").touch()
-#         my_file.unlink()
-#     else:
-#         # 等待 rank 0 完成
-#         done_file = shared_dir / f"done_{job_id}"
-#         for _ in range(3000):
-#             if done_file.exists():
-#                 break
-#             time.sleep(0.1)
-#         else:
-#             raise TimeoutError("Timeout waiting for rank 0")
-        
-#         my_file.unlink()
-#         done_file.unlink() if rank == 1 else None  # 只有一个 rank 清理
-    
-#     _row_dict.clear()
-
 def gpu_memory_used(gpu_id=0):
 
     if os.getenv('USE_CUDA') == 'true':
@@ -205,7 +123,6 @@ def gpu_memory_used(gpu_id=0):
         return int(out)
     elif os.getenv('USE_VENDOR_B') == 'true':
         txt = subprocess.check_output(["vendor-smi"], text=True).replace(",", "")
-        # 一张卡 = 三行；从 GPU 序号行开始抓到下一个 "+---" 之前
         block = re.search(
             rf"\|\s*{gpu_id}\b.*?\n(.*?)\n\+-",
             txt, re.S
