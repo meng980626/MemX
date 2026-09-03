@@ -1,13 +1,4 @@
 # objective.py
-"""MemX 多目标评分（论文 §3.1.2, Eq. (2)）。
-
-    Φ(x) = T̂(x)^wT · M̂(x)^wM · V̂(x)^wV
-
-其中 T̂ = T/T_ref，M̂ = M/M_ref，V̂ = (V+εV)/(V_ref+εV)，
-参考值 T_ref/M_ref/V_ref 取当前候选集合的中位数（归一化不改变排序，
-因为参考分母只是常数因子），εV 取 V_ref 的一个小比例，
-防止 V=0 的配置仅凭方差项主导整个乘积。
-"""
 
 # ---- 三个固定权重 profile（§3.1.2，不在测试集上调参）----
 WEIGHT_PROFILES = {
@@ -49,7 +40,6 @@ def select_weight_profile(min_mem_margin, het_index, override=None):
 
 
 def compute_references(candidates):
-    """参考值取所有可行候选的中位数。candidates: list of dict，含 'T','M','V'。"""
     import numpy as np
     return {
         'T_ref': float(np.median([c['T'] for c in candidates])),
@@ -59,7 +49,6 @@ def compute_references(candidates):
 
 
 def phi(T, M, V, refs, weights):
-    """Eq. (2)：加权乘积，自动惩罚短板项。weights = (wT, wM, wV)。"""
     wT, wM, wV = weights
     eps = EPSILON_RATIO * refs['V_ref']
     T_hat = T / refs['T_ref']
@@ -70,10 +59,7 @@ def phi(T, M, V, refs, weights):
 
 def select_schedule(min_available_mem, max_stage_mem_demand, het_index,
                     pressure_threshold=1.2):
-    """自适应流水线调度选择（§3.1.2）：
-    显存受限或异构显著时强制 1F1B（保证可行性、显存占用稳定）；
-    显存充足且设备足够同构时用 interleaved 1F1B（压缩气泡）。
-    """
+
     pressure = memory_pressure_index(min_available_mem, max_stage_mem_demand)
     if pressure < pressure_threshold or het_index > HETEROGENEITY_THRESHOLD:
         return '1F1B'
