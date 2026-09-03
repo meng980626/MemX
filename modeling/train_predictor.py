@@ -13,8 +13,6 @@ import math
 from sklearn.preprocessing import LabelEncoder
 
 df = pd.read_csv('./result_recompute_19.csv', na_values=None, keep_default_na=False).dropna(axis=1, how='all')
-#筛除一些之前自定义的列
-# df = df.drop(columns=['amp', 'error', 'Unnamed: 25'])
 
 df['dtype_hardware_gen'] = df['dtype'].map({
     'fp16': 1, 
@@ -141,7 +139,7 @@ def data_aug(X, y, target_col='elapsed time per iteration'):
             
             a, b = coef_dict.get(bg_vals)
             a = a.reshape(-1) 
-            y_aug[i] = np.dot(ext_val[i, :], a) + b   # y = Ax + b（单目标
+            y_aug[i] = np.dot(ext_val[i, :], a) + b   
             # if y_aug[i] < 0:
             #     num_error[ext_col]+=1
             #     # print("ext_col:",ext_col)
@@ -154,7 +152,7 @@ def data_aug(X, y, target_col='elapsed time per iteration'):
     
         y_aug = pd.Series(y_aug, name=TARGET_COLS[0])
 
-        y1 = pd.concat([y1[TARGET_COLS[0]].to_frame(),   # ← 转回 DataFrame
+        y1 = pd.concat([y1[TARGET_COLS[0]].to_frame(),   #转回 DataFrame
                y_aug.to_frame()], ignore_index=True)
         X1 = pd.concat([X1, aug], ignore_index=True)
 
@@ -183,9 +181,8 @@ def train(X_train, X_test, y_train, y_test, model_name, n_estimators=30000):
         label_encoders[col] = le
     
     
-    # 2. 模型打开 categorical 支持
     xgb_single = xgb.XGBRegressor(
-        n_estimators=n_estimators, # 默认足够大，配合 early stopping
+        n_estimators=n_estimators, 
         learning_rate=0.03,
         max_depth=0,
         subsample=0.8,

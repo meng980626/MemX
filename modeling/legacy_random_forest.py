@@ -11,12 +11,11 @@ df = pd.read_csv('./v100_result.csv', sep=None)
 X = df.drop(columns=['CP size','EXP ID','dtype','ffn hidden size','hidden size','vocab size','Peak GPU memory','TFLOP/s/GPU','elapsed time per iteration'])
 y = df[['Peak GPU memory','TFLOP/s/GPU','elapsed time per iteration']]
 
-# 自动区分离散/连续
 cat_cols = X.select_dtypes(include=['object','int64']).columns.tolist()
 num_cols = X.select_dtypes(include=['float64']).columns.tolist()
 
 pre = ColumnTransformer([
-        ('cat', 'passthrough', cat_cols),   # 也可以换成 OneHotEncoder
+        ('cat', 'passthrough', cat_cols),   
         ('num', StandardScaler(), num_cols)
     ])
 
