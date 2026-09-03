@@ -61,20 +61,6 @@ def barrier(config_idx, total_nodes=3, timeout=5000):
                             pass
 
                 print(f"[INIT] Rank 0 已清理同步目录")
-            # if args.noderank != 0:
-            #     try:
-            #         os.remove(ready_file)
-            #     except:
-            #         pass
-            # else:
-            #     # rank 0等其他人清理完再清理done_file
-            #     time.sleep(400)
-            #     for f in os.listdir(SYNC_DIR):
-            #         if f"_{config_idx}" in f:
-            #             try:
-            #                 os.remove(os.path.join(SYNC_DIR, f))
-            #             except:
-            #                 pass
             return False
         time.sleep(0.2)
     
